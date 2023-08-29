@@ -36,11 +36,9 @@ app.get('/', (req, res) => {
 app.post('/api/users', function(req, res) {
   var username = req.body.username
   User.findOne({ name: username }).then(function(foundUser) {
-    console.log(foundUser)
     if (foundUser == null) {
       var user = new User({ name: username })
       user.save().then(function(new_user) {
-        console.log(new_user)
         res.json({ username: new_user.name, _id: new_user._id })
       }).catch(err => { console.error(err) })
     } else {
@@ -55,6 +53,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.post('/api/users/:user_id/exercises', function(req, res) {
+  console.log(req.body)
   User.findOne({ _id: req.body[':_id'] }).then(function(foundUser) {
     console.log(foundUser != null)
     if (foundUser != null) {
