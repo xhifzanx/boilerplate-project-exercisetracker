@@ -57,6 +57,7 @@ app.use(express.urlencoded({ extended: true }));
 app.post('/api/users/:user_id/exercises', function(req, res) {
   User.findOne({ _id: req.body[':_id'] }).then(function(foundUser) {
     console.log(foundUser)
+    console.log(req.body)
     if (foundUser != null) {
       var date = req.body.date
       if (date.length == 0) {
@@ -83,8 +84,6 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
       }).catch(err => {
         console.error(err)
       })
-    } else {
-      console.error('No user found')
     }
 
   }).catch(err => {
