@@ -88,7 +88,11 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
 
 app.get('/api/users', function(req, res) {
   User.find().then((data) => {
-    res.json(data)
+    var user_data = []
+    for (var i = 0; i < data.length; i++) {
+      user_data.push({ _id: data[i]._id, username: data[i].name })
+    }
+    res.json(user_data)
   }).catch(err => {
     console.error(err)
   })
