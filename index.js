@@ -60,7 +60,7 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
     console.log(req.body)
     if (foundUser != null) {
       var date = req.body.date
-      if (date.length == 0) {
+      if ('date' in req.body) {
         var new_date = new Date()
       } else {
         var new_date = new Date(date)
@@ -69,10 +69,10 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
       if (new_date == 'Invalid Date') {
         return console.error('Invalid Date')
       }
-
+      console.log(new_date)
       var exercise = new Exercise({ user_id: req.body[':_id'], description: req.body.description, duration: req.body.duration, date: new_date })
       exercise.save().then(function(new_exercise) {
-
+        console.log('working')
         function formatted_date(dateString) {
           const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
           var date = new Date(dateString)
