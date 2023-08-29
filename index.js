@@ -54,7 +54,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.post('/api/users/:user_id/exercises', function(req, res) {
   console.log(req.params)
-  User.findOne({ _id: req.body[':_id'] }).then(function(foundUser) {
+  User.findOne({ _id: req.params.user_id }).then(function(foundUser) {
     console.log(foundUser != null)
     if (foundUser != null) {
       var date = req.body.date
