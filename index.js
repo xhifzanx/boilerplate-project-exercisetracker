@@ -40,6 +40,7 @@ app.post('/api/users', function(req, res) {
     if (foundUser == null) {
       var user = new User({ name: username })
       user.save().then(function(new_user) {
+        console.log(new_user)
         res.json({ username: new_user.name, _id: new_user._id })
       }).catch(err => { console.error(err) })
     } else {
@@ -56,31 +57,36 @@ app.use(express.urlencoded({ extended: true }));
 app.post('/api/users/:user_id/exercises', function(req, res) {
   User.findOne({ _id: req.body[':_id'] }).then(function(foundUser) {
     console.log(foundUser)
-    var date = req.body.date
-    if (date.length == 0) {
-      var new_date = new Date()
-    } else {
-      var new_date = new Date(date)
-    }
-
-    if (new_date == 'Invalid Date') {
-      return console.error('Invalid Date')
-    }
-
-    var exercise = new Exercise({ user_id: req.body[':_id'], description: req.body.description, duration: req.body.duration, date: new_date })
-    exercise.save().then(function(new_exercise) {
-
-      function formatted_date(dateString) {
-        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-        var date = new Date(dateString)
-        var d = date.toLocaleDateString('en-US', options);
-        return d.split(',').join('')
+    if (foundUser != null) {
+      var date = req.body.date
+      if (date.length == 0) {
+        var new_date = new Date()
+      } else {
+        var new_date = new Date(date)
       }
-      var formatted_date = formatted_date(new_exercise.date)
-      res.json({ _id: new_exercise.user_id, username: foundUser.name, date: formatted_date, duration: Number(new_exercise.duration), description: new_exercise.description })
-    }).catch(err => {
-      console.error(err)
-    })
+
+      if (new_date == 'Invalid Date') {
+        return console.error('Invalid Date')
+      }
+
+      var exercise = new Exercise({ user_id: req.body[':_id'], description: req.body.description, duration: req.body.duration, date: new_date })
+      exercise.save().then(function(new_exercise) {
+
+        function formatted_date(dateString) {
+          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+          var date = new Date(dateString)
+          var d = date.toLocaleDateString('en-US', options);
+          return d.split(',').join('')
+        }
+        var formatted_date = formatted_date(new_exercise.date)
+        res.json({ _id: new_exercise.user_id, username: foundUser.name, date: formatted_date, duration: Number(new_exercise.duration), description: new_exercise.description })
+      }).catch(err => {
+        console.error(err)
+      })
+    } else {
+      console.error('No user found')
+    }
+
   }).catch(err => {
     console.error(err)
   })
@@ -101,62 +107,64 @@ app.get('/api/users', function(req, res) {
 app.get('/api/users/:user_id/logs?', function(req, res) {
   var user_id = req.params.user_id
   User.findOne({ _id: user_id }).then(user => {
+    if (user != null) {
+      console.log(req.query)
+      console.log("from" in req.query)
+      if ("from" in req.query || "to" in req.query || "limit" in req.query) {
+        var endDate;
+        var startDate;
+        var limit;
+        if ('limit' in req.query) limit = req.query.limit
+        if ('from' in req.query) startDate = new Date(req.query.from)
+        if ('to' in req.query) endDate = new Date(req.query.to)
+        console.log(startDate)
+        console.log(endDate)
+        var date_query;
+        if (startDate instanceof Date && endDate instanceof Date) {
+          date_query = { $gte: startDate, $lte: endDate }
+        } else if (startDate instanceof Date) {
+          console.log('working')
+          date_query = { $gte: startDate }
+        } else {
+          date_query = { $lte: endDate }
+        }
 
-    console.log(req.query)
-    console.log("from" in req.query)
-    if ("from" in req.query || "to" in req.query || "limit" in req.query) {
-      var endDate;
-      var startDate;
-      var limit;
-      if ('limit' in req.query) limit = req.query.limit
-      if ('from' in req.query) startDate = new Date(req.query.from)
-      if ('to' in req.query) endDate = new Date(req.query.to)
-      console.log(startDate)
-      console.log(endDate)
-      var date_query;
-      if (startDate instanceof Date && endDate instanceof Date) {
-        date_query = { $gte: startDate, $lte: endDate }
-      } else if (startDate instanceof Date) {
-        console.log('working')
-        date_query = { $gte: startDate }
-      } else {
-        date_query = { $lte: endDate }
+        Exercise.find({
+          user_id: user_id,
+          date: date_query
+        }).limit(limit).then((data) => {
+          function formatted_date(dateString) {
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            var d = dateString.toLocaleDateString('en-US', options);
+            return d.split(',').join('')
+          }
+
+          var formatted_data = []
+          for (var i = 0; i < data.length; i++) {
+            formatted_data.push({ description: data[i].description, duration: Number(data[i].duration), date: formatted_date(data[i].date) })
+          }
+          return res.json({ _id: user_id, username: user.name, count: data.length, logs: formatted_data })
+
+        }).catch(err => { console.error(err) })
       }
+      else {
+        Exercise.find({ user_id: user_id }).then(data => {
+          function formatted_date(dateString) {
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            var date = new Date(dateString)
+            var d = date.toLocaleDateString('en-US', options);
+            return d.split(',').join('')
+          }
 
-      Exercise.find({
-        user_id: user_id,
-        date: date_query
-      }).limit(limit).then((data) => {
-        function formatted_date(dateString) {
-          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-          var d = dateString.toLocaleDateString('en-US', options);
-          return d.split(',').join('')
-        }
-
-        var formatted_data = []
-        for (var i = 0; i < data.length; i++) {
-          formatted_data.push({ description: data[i].description, duration: Number(data[i].duration), date: formatted_date(data[i].date) })
-        }
-        return res.json({ _id: user_id, username: user.name, count: data.length, logs: formatted_data })
-
-      }).catch(err => { console.error(err) })
+          var formatted_data = []
+          for (var i = 0; i < data.length; i++) {
+            formatted_data.push({ description: data[i].description, duration: Number(data[i].duration), date: formatted_date(data[i].date) })
+          }
+          return res.json({ _id: user_id, username: user.name, count: data.length, logs: formatted_data })
+        }).catch(err => { console.error(err) })
+      }
     }
-    else {
-      Exercise.find({ user_id: user_id }).then(data => {
-        function formatted_date(dateString) {
-          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-          var date = new Date(dateString)
-          var d = date.toLocaleDateString('en-US', options);
-          return d.split(',').join('')
-        }
 
-        var formatted_data = []
-        for (var i = 0; i < data.length; i++) {
-          formatted_data.push({ description: data[i].description, duration: Number(data[i].duration), date: formatted_date(data[i].date) })
-        }
-        return res.json({ _id: user_id, username: user.name, count: data.length, logs: formatted_data })
-      }).catch(err => { console.error(err) })
-    }
   }).catch(err => { console.error(err) })
 
 })
