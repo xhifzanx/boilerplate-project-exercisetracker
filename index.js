@@ -37,7 +37,6 @@ app.post('/api/users', function(req, res) {
         res.json({ username: new_user.name, _id: new_user._id })
       }).catch(err => { console.error(err) })
     } else {
-      console.log(foundUser)
       return res.json({ username: foundUser.name, _id: foundUser._id })
     }
   }).catch(err => { console.error(err) })
@@ -58,7 +57,7 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
   if (new_date == 'Invalid Date') {
     return console.error('Invalid Date')
   }
-  console.log(new_date)
+  console.log(req.params)
   var exerciseData = { description: req.body.description, duration: req.body.duration, date: new_date }
   User.findByIdAndUpdate(req.params.user_id, { $push: { exercise: exerciseData } }).then(function(data) {
     function formatted_date(dateString) {
