@@ -12,8 +12,8 @@ conn.on('connected', function() {
 
 const userSchema = new mongoose.Schema({
   name: { type: String },
-  exercise: {type: Array}
-  
+  exercise: { type: Array }
+
 })
 
 
@@ -59,8 +59,8 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
     return console.error('Invalid Date')
   }
   console.log(new_date)
-  var exerciseData = {description: req.body.description, duration: req.body.duration, date: new_date }
-  User.findByIdAndUpdate(req.params.user_id, {$push: {exercise: exerciseData}}).then(function(data) {
+  var exerciseData = { description: req.body.description, duration: req.body.duration, date: new_date }
+  User.findByIdAndUpdate(req.params.user_id, { $push: { exercise: exerciseData } }).then(function(data) {
     function formatted_date(dateString) {
       const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
       var date = new Date(dateString)
@@ -68,8 +68,8 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
       return d.split(',').join('')
     }
     var formatted_date = formatted_date(new_date)
-  
-    res.json({ _id: data._id, username: data.name, date: formatted_date, data: data })
+
+    res.json({ _id: data._id, username: data.name, date: formatted_date, duration: exerciseData.duration, description: exerciseData.description })
   })
 })
 
@@ -101,26 +101,26 @@ app.get('/api/users/:user_id/logs?', function(req, res) {
         console.log(startDate)
         console.log(endDate)
         if ((startDate instanceof Date) && (endDate instanceof Date)) {
-          var exercises = user.exercise.filter((exercise) => {return (exercise.date >= startDate && exercise.date <= endDate)})
+          var exercises = user.exercise.filter((exercise) => { return (exercise.date >= startDate && exercise.date <= endDate) })
         } else if (startDate instanceof Date) {
-          var exercises = user.exercise.filter((exercise) => {return exercise.date >= startDate})
+          var exercises = user.exercise.filter((exercise) => { return exercise.date >= startDate })
         } else if (endDate instanceof Date) {
-          var exercises = user.exercise.filter((exercise) => {return exercise.date <= endDate})
+          var exercises = user.exercise.filter((exercise) => { return exercise.date <= endDate })
         } else {
           var exercises = user.exercise
         }
-          function formatted_date(dateString) {
-            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-            var d = dateString.toLocaleDateString('en-US', options);
-            return d.split(',').join('')
-          }
+        function formatted_date(dateString) {
+          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+          var d = dateString.toLocaleDateString('en-US', options);
+          return d.split(',').join('')
+        }
 
         var formatted_data = []
-        if (limit != null) {var length = Number(limit)} else {var length = exercises.length}
-        for (var i = 0; i < length; i++){
+        if (limit != null) { var length = Number(limit) } else { var length = exercises.length }
+        for (var i = 0; i < length; i++) {
           formatted_data.push({ description: exercises[i].description, duration: Number(exercises[i].duration), date: formatted_date(exercises[i].date) })
         }
-        return res.json({ _id: user_id, username: user.name, count: length, logs: formatted_data })
+        return res.json({ _id: user_id, username: user.name, count: length, log: formatted_data })
       }
       else {
         function formatted_date(dateString) {
@@ -132,10 +132,10 @@ app.get('/api/users/:user_id/logs?', function(req, res) {
 
         var formatted_data = []
 
-        for (var i = 0; i < user.exercise.length; i++){
+        for (var i = 0; i < user.exercise.length; i++) {
           formatted_data.push({ description: user.exercise[i].description, duration: Number(user.exercise[i].duration), date: formatted_date(user.exercise[i].date) })
         }
-        return res.json({ _id: user_id, username: user.name, count: user.exercise.length, logs: formatted_data })
+        return res.json({ _id: user_id, username: user.name, count: user.exercise.length, log: formatted_data })
       }
     }
 
