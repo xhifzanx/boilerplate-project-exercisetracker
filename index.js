@@ -69,7 +69,7 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
     }
     var formatted_date = formatted_date(new_date)
 
-    res.json({ _id: data._id, username: data.name, date: formatted_date, duration: exerciseData.duration, description: exerciseData.description })
+    res.json({ _id: data._id, username: data.name, date: formatted_date, duration: Number(exerciseData.duration), description: exerciseData.description })
   })
 })
 
