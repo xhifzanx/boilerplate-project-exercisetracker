@@ -11,18 +11,13 @@ conn.on('connected', function() {
 })
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true }
+  name: { type: String },
+  exercise: {type: Array}
+  
 })
 
-const exerciseSchema = new mongoose.Schema({
-  user_id: String,
-  description: { type: String, required: true },
-  duration: { type: String, required: true },
-  date: { type: Date, default: Date.now }
-})
 
 let User = mongoose.model('User', userSchema);
-let Exercise = mongoose.model('Exercise', exerciseSchema);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -53,39 +48,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.post('/api/users/:user_id/exercises', function(req, res) {
-  console.log(req.params)
-  User.findOne({ _id: req.params.user_id }).then(function(foundUser) {
-    console.log(foundUser != null)
-    if (foundUser != null) {
-      var date = req.body.date
-      if ('date' in req.body) {
-        var new_date = new Date()
-      } else {
-        var new_date = new Date(date)
-      }
+  var date = req.body.date
+  if ('date' in req.body) {
+    var new_date = new Date(date)
+  } else {
+    var new_date = new Date()
+  }
 
-      if (new_date == 'Invalid Date') {
-        return console.error('Invalid Date')
-      }
-      console.log(new_date)
-      var exercise = new Exercise({ user_id: req.body[':_id'], description: req.body.description, duration: req.body.duration, date: new_date })
-      exercise.save().then(function(new_exercise) {
-        console.log('working')
-        function formatted_date(dateString) {
-          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-          var date = new Date(dateString)
-          var d = date.toLocaleDateString('en-US', options);
-          return d.split(',').join('')
-        }
-        var formatted_date = formatted_date(new_exercise.date)
-        res.json({ _id: new_exercise.user_id, username: foundUser.name, date: formatted_date, duration: Number(new_exercise.duration), description: new_exercise.description })
-      }).catch(err => {
-        console.error(err)
-      })
+  if (new_date == 'Invalid Date') {
+    return console.error('Invalid Date')
+  }
+  console.log(new_date)
+  var exerciseData = {description: req.body.description, duration: req.body.duration, date: new_date }
+  User.findByIdAndUpdate(req.params.user_id, {$push: {exercise: exerciseData}}).then(function(data) {
+    function formatted_date(dateString) {
+      const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+      var date = new Date(dateString)
+      var d = date.toLocaleDateString('en-US', options);
+      return d.split(',').join('')
     }
-
-  }).catch(err => {
-    console.error(err)
+    var formatted_date = formatted_date(new_date)
+  
+    res.json({ _id: data._id, username: data.name, date: formatted_date, data: data })
   })
 })
 
@@ -116,49 +100,42 @@ app.get('/api/users/:user_id/logs?', function(req, res) {
         if ('to' in req.query) endDate = new Date(req.query.to)
         console.log(startDate)
         console.log(endDate)
-        var date_query;
-        if (startDate instanceof Date && endDate instanceof Date) {
-          date_query = { $gte: startDate, $lte: endDate }
+        if ((startDate instanceof Date) && (endDate instanceof Date)) {
+          var exercises = user.exercise.filter((exercise) => {return (exercise.date >= startDate && exercise.date <= endDate)})
         } else if (startDate instanceof Date) {
-          console.log('working')
-          date_query = { $gte: startDate }
+          var exercises = user.exercise.filter((exercise) => {return exercise.date >= startDate})
+        } else if (endDate instanceof Date) {
+          var exercises = user.exercise.filter((exercise) => {return exercise.date <= endDate})
         } else {
-          date_query = { $lte: endDate }
+          var exercises = user.exercise
         }
-
-        Exercise.find({
-          user_id: user_id,
-          date: date_query
-        }).limit(limit).then((data) => {
           function formatted_date(dateString) {
             const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
             var d = dateString.toLocaleDateString('en-US', options);
             return d.split(',').join('')
           }
 
-          var formatted_data = []
-          for (var i = 0; i < data.length; i++) {
-            formatted_data.push({ description: data[i].description, duration: Number(data[i].duration), date: formatted_date(data[i].date) })
-          }
-          return res.json({ _id: user_id, username: user.name, count: data.length, logs: formatted_data })
-
-        }).catch(err => { console.error(err) })
+        var formatted_data = []
+        if (limit != null) {var length = Number(limit)} else {var length = exercises.length}
+        for (var i = 0; i < length; i++){
+          formatted_data.push({ description: exercises[i].description, duration: Number(exercises[i].duration), date: formatted_date(exercises[i].date) })
+        }
+        return res.json({ _id: user_id, username: user.name, count: length, logs: formatted_data })
       }
       else {
-        Exercise.find({ user_id: user_id }).then(data => {
-          function formatted_date(dateString) {
-            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-            var date = new Date(dateString)
-            var d = date.toLocaleDateString('en-US', options);
-            return d.split(',').join('')
-          }
+        function formatted_date(dateString) {
+          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+          var date = new Date(dateString)
+          var d = date.toLocaleDateString('en-US', options);
+          return d.split(',').join('')
+        }
 
-          var formatted_data = []
-          for (var i = 0; i < data.length; i++) {
-            formatted_data.push({ description: data[i].description, duration: Number(data[i].duration), date: formatted_date(data[i].date) })
-          }
-          return res.json({ _id: user_id, username: user.name, count: data.length, logs: formatted_data })
-        }).catch(err => { console.error(err) })
+        var formatted_data = []
+
+        for (var i = 0; i < user.exercise.length; i++){
+          formatted_data.push({ description: user.exercise[i].description, duration: Number(user.exercise[i].duration), date: formatted_date(user.exercise[i].date) })
+        }
+        return res.json({ _id: user_id, username: user.name, count: user.exercise.length, logs: formatted_data })
       }
     }
 
