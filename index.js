@@ -119,7 +119,7 @@ app.get('/api/users/:user_id/logs?', function(req, res) {
         var formatted_data = []
 
         for (var i = 0; i < user.exercise.length; i++) {
-          formatted_data.push({ description: user.exercise[i].description, duration: Number(user.exercise[i].duration), date: formatted_date(user.exercise[i].date) })
+          formatted_data.push({ description: user.exercise[i].description, duration: Number(user.exercise[i].duration), date: user.exercise[i].date.toDateString() })
         }
         return res.json({ _id: user_id, username: user.name, count: user.exercise.length, log: formatted_data })
       }
