@@ -61,7 +61,7 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
   console.log(new_date)
   var exerciseData = { description: req.body.description, duration: req.body.duration, date: new_date }
   User.findByIdAndUpdate(req.params.user_id, { $push: { exercise: exerciseData } }).then(function(data) {
-    res.json({ _id: data._id, username: data.name, date: new_date.toDateString(), duration: Number(exerciseData.duration), description: exerciseData.description })
+    return res.json({ _id: data._id, username: data.name, date: new_date.toDateString(), duration: Number(exerciseData.duration), description: exerciseData.description })
   })
 })
 
