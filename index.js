@@ -61,15 +61,7 @@ app.post('/api/users/:user_id/exercises', function(req, res) {
   console.log(new_date)
   var exerciseData = { description: req.body.description, duration: req.body.duration, date: new_date }
   User.findByIdAndUpdate(req.params.user_id, { $push: { exercise: exerciseData } }).then(function(data) {
-    function formatted_date(dateString) {
-      const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-      var date = new Date(dateString)
-      var d = date.toLocaleDateString('en-US', options);
-      return d.split(',').join('')
-    }
-    var formatted_date = formatted_date(new_date)
-
-    res.json({ _id: data._id, username: data.name, date: formatted_date, duration: Number(exerciseData.duration), description: exerciseData.description })
+    res.json({ _id: data._id, username: data.name, date: new_date.toDateString(), duration: Number(exerciseData.duration), description: exerciseData.description })
   })
 })
 
@@ -109,16 +101,10 @@ app.get('/api/users/:user_id/logs?', function(req, res) {
         } else {
           var exercises = user.exercise
         }
-        function formatted_date(dateString) {
-          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-          var d = dateString.toLocaleDateString('en-US', options);
-          return d.split(',').join('')
-        }
-
         var formatted_data = []
         if (limit != null) { var length = Number(limit) } else { var length = exercises.length }
         for (var i = 0; i < length; i++) {
-          formatted_data.push({ description: exercises[i].description, duration: Number(exercises[i].duration), date: formatted_date(exercises[i].date) })
+          formatted_data.push({ description: exercises[i].description, duration: Number(exercises[i].duration), date: exercises[i].date.toDateString() })
         }
         return res.json({ _id: user_id, username: user.name, count: length, log: formatted_data })
       }
